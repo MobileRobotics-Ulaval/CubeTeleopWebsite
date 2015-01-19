@@ -22,7 +22,7 @@
 
 #leftDiv{
 	overflow-y: scroll;
-	width: 700px;
+	width: 50%;
 	height: 400px;
 	float: left;
 	background-color:lightgreen;
@@ -30,7 +30,7 @@
 
 #rightDiv{
 	overflow-y: scroll;
-	width: 500px;
+	width: 50%;
 	height: 400px;
 	float: right;
 	background-color:lightblue;
@@ -40,6 +40,7 @@
 <script type="text/javascript" type="text/javascript">
 
   var NAME_OF_VIDEO_FEED_TOPIC = '/mamba/ardrone/image_raw';
+  var NAME_OF_POSITION_TOPIC = '/cube_position_js';
   var cmdVel;
   var ros;
   var listener;
@@ -67,7 +68,7 @@
 
 	cmdVel = new ROSLIB.Topic({
 		ros : ros,
-		name : '/cube_position_js',
+		name : NAME_OF_POSITION_TOPIC,
 		messageType : 'geometry_msgs/Point'
 	});
 
@@ -146,18 +147,11 @@ function showTopicOutput(name){
 function updateTopicsList(){
 	ros.getTopics(
 		function(results) {
-			
-      			//console.log(results);
-			//var str = "";
+			console.log("Refresing topics")
+			$("ul").empty();
 			for(var i in results){
 				$("ul").append("<li><a href=\"#topic-out\" onclick=\"showTopicOutput('" + results[i] + "')\">" + results[i] + "</a></li>");
 			}
-	    		//for(var topic in results){
-      			//	console.log(topic[1]);
-			//	str += topic;
-			//}
-      			//console.log(str);
-			//$('#topic-list').text(str);
 	});
 	
 }
