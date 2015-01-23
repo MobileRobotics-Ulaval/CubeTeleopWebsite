@@ -21,17 +21,14 @@
 
 
 #leftDiv{
-	overflow-y: scroll;
-	width: 50%;
-	height: 400px;
+	width: 650;
 	float: left;
 	background-color:lightgreen;
 } 
 
 #rightDiv{
-	overflow-y: scroll;
+	overflow-x: scroll;
 	width: 50%;
-	height: 400px;
 	float: right;
 	background-color:lightblue;
 }
@@ -39,11 +36,14 @@
 
 <script type="text/javascript" type="text/javascript">
 
-  var NAME_OF_VIDEO_FEED_TOPIC = '/mamba/ardrone/image_raw';
+  var NAMES_OF_VIDEO_FEED_TOPIC = ['/mamba/ardrone/image_raw', '/king/ardrone/image_raw'];
+  var LABELS_OF_VIDEO_FEED_TOPIC = ['robot front camera', 'robot back camera...'];
   var NAME_OF_POSITION_TOPIC = '/cube_position_js';
   var cmdVel;
   var ros;
   var listener;
+  var target_topic = "/";
+  var autoupdate_timer;
   /**
    * Setup all visualization elements when the page is loaded. 
    */
@@ -73,40 +73,21 @@
 	});
 
 	
-	// Create the main viewer.
-	var viewer = new MJPEGCANVAS.Viewer({
+	// Create the image multistream viewer.
+	var viewer = new MJPEGCANVAS.MultiStreamViewer({
 		divID : 'mjpeg',
 		host : 'localhost',
 		width : 640,
 		height : 480,
-		topic : NAME_OF_VIDEO_FEED_TOPIC
+		topics : NAMES_OF_VIDEO_FEED_TOPIC,
+		labels : LABELS_OF_VIDEO_FEED_TOPIC
 	});
 
-	/*
-	var teleop = new KEYBOARDTELEOP.Teleop({
-		ros : ros,
-		topic : '/base_controller/command'
-	});*/
-
-	// Create a UI slider using JQuery UI.
-	/*$('#speed-slider').slider({
-		range : 'min',
-		min : 0,
-		max : 100,
-		value : 90,
-		slide : function(event, ui) {
-			// Change the speed label.
-			$('#speed-label').html('Speed: ' + ui.value + '%');
-			// Scale the speed.
-			teleop.scale = (ui.value / 100.0);
-		}
-	});*/
-
-    // Set the initial speed .
-    /*$('#speed-label').html('Speed: ' + ($('#speed-slider').slider('value')) + '%');
-    teleop.scale = ($('#speed-slider').slider('value') / 100.0);*/
     updateTopicsList();
-    	
+   
+    // Subscribe to the last message of the targeted topic
+    // And print it in the box
+   setInterval(autoUpdate, 500);
 }
 
 /**
@@ -122,35 +103,54 @@ function sendPosition() {
 	cmdVel.publish(point);
 }
 
-function showTopicOutput(name){
+function setTargetTopic(){
 	// We fetch the message type with is name
-	ros.getTopicType(name, 
+	target_topic = $("#topics").val();
+	console.log('Name: ' + target_topic);
+	updateTargetTopic();
+}
+
+function autoUpdate(){
+	// If the target topic is defined and auto update is ON
+	if(target_topic != "/" && $("#autoupdate")[0].checked){
+		updateTargetTopic();
+	}
+}
+
+function updateTargetTopic(){
+	ros.getTopicType(target_topic, 
 		function(type){
 			//console.log(type);
+			console.log("Update topic message");
 			listener = new ROSLIB.Topic({
 			    ros : ros,
-			    name : name,
+			    name : target_topic,
 			   messageType : type
 			  });
 
 			  listener.subscribe(function(message) {
-			    //console.log('Received message on ' + listener.name + ': ' + message);
-			    //$('#topic-out').text('Received message on ' + listener.name + ': ' + message);
-			    listener.unsubscribe();
-			    var indentedMsgOutput = JSON.stringify(message, null, 4);
-			    $('#topic-out').html(indentedMsgOutput);
-/*'Received message on ' + listener.name + ': <br/ > ' + */
+				//We check that it's not an image before converting it to text
+				if(type.match("/Image$")){
+				$('#topic-out').html("Use the image stream on the left for displaying image");
+				}
+				else{
+				var indentedMsgOutput = JSON.stringify(message, null, 4);
+				$('#topic-out').html(indentedMsgOutput);
+				}
+				listener.unsubscribe();
 			  });
-	}/*, name*/);
+	});
 }
+
 
 function updateTopicsList(){
 	ros.getTopics(
 		function(results) {
 			console.log("Refresing topics")
-			$("ul").empty();
+			$("#topics").empty();
+				$("#topics").append("<option >/</option>");
 			for(var i in results){
-				$("ul").append("<li><a href=\"#topic-out\" onclick=\"showTopicOutput('" + results[i] + "')\">" + results[i] + "</a></li>");
+				$("#topics").append("<option >" + results[i] + "</option>");
 			}
 	});
 	
@@ -160,25 +160,24 @@ function updateTopicsList(){
 </head>
 
 <body onload="init()">
-  <h2>Cube Teleoperation Interface</h2>
+  <h2>Tryphon Teleoperation Interface</h2>
+<div id="leftDiv"> 
 <form id="position">
 	<div>
-		<input type="number" id="X" name="X" min="0" step="0.1" value="0.4">
-		<input type="number" id="Y" name="Y" min="0" step="0.1" value="0.4">
-		<input type="number" id="Z" name="Z" min="0" step="0.1" value="0.4">
+		<input type="number" id="X" name="X" min="0" step="0.1" value="0.4">m
+		<input type="number" id="Y" name="Y" min="0" step="0.1" value="0.4">m
+		<input type="number" id="Z" name="Z" min="0" step="0.1" value="0.4">m
 		<input type='button' value='Send position' onClick='sendPosition()' >
 	</div>
 </form>
   <div id="mjpeg"></div>
-<input type='button' value='Refresh topics' onClick='updateTopicsList()' />
-  <div id="speed-label"></div>
-  <div id="speed-slider"></div>
+	
+</div>
 
 <div id="rightDiv"> 
-  <pre id="topic-out"></pre>
-</div>
-<div id="leftDiv"> 
-<ul> </ul>
+	<input type='button' value='Refresh topics' onClick='updateTopicsList()' /><label>Auto update:</label><input type="checkbox" id="autoupdate" value="0" />
+	<select id="topics" onchange="setTargetTopic()"><option>/</option></select> 
+	<pre id="topic-out"></pre>
 </div>
 
 </body>
