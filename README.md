@@ -13,7 +13,7 @@ $ git clone  https://github.com/MobileRobotics-Ulaval/CubeTeleopWebsite
 
 ##Installation of ROSlibjs##
 ```shell
-$ sudo apt-get install apache2 ros-<insert ros version(Ex:hydro)>-rosbridge-suite ros-<same here>-web-video-server
+$ sudo apt-get install apache2 ros-<insert ros version(Ex:hydro)>-rosbridge-suite ros-<same here>-mjpeg-server
 
 ```
 
