@@ -32,6 +32,9 @@
 	float: right;
 	background-color:lightblue;
 }
+#url-vlc{
+	width: 90%;
+}
 </style>
 
 <script type="text/javascript" type="text/javascript">
@@ -82,7 +85,11 @@
 		topics : NAMES_OF_VIDEO_FEED_TOPIC,
 		labels : LABELS_OF_VIDEO_FEED_TOPIC
 	});
-
+    
+    var url_vlc_fullscreen = location.protocol + "//"  + 
+				     location.host + ':8080/stream?topic=' + 
+				     NAMES_OF_VIDEO_FEED_TOPIC[0];
+    $("#url-vlc").val(url_vlc_fullscreen);
     updateTopicsList();
    
     // Subscribe to the last message of the targeted topic
@@ -164,14 +171,14 @@ function updateTopicsList(){
 <div id="leftDiv"> 
 <form id="position">
 	<div>
-		<input type="number" id="X" name="X" min="0" step="0.1" value="0.4">m
-		<input type="number" id="Y" name="Y" min="0" step="0.1" value="0.4">m
-		<input type="number" id="Z" name="Z" min="0" step="0.1" value="0.4">m
+		<input type="number" id="X" name="X" min="0" step="0.1" value="0.4" />m
+		<input type="number" id="Y" name="Y" min="0" step="0.1" value="0.4" />m
+		<input type="number" id="Z" name="Z" min="0" step="0.1" value="0.4" />m
 		<input type='button' value='Send position' onClick='sendPosition()' >
 	</div>
 </form>
   <div id="mjpeg"></div>
-	
+  URL for VLC in (Media > Open Network Stream...): <input type="text" id="url-vlc" name="url-vlc" />
 </div>
 
 <div id="rightDiv"> 
@@ -182,4 +189,5 @@ function updateTopicsList(){
 
 </body>
 </html>
+
 
