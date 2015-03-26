@@ -81,7 +81,7 @@
 	// Create the image multistream viewer.
 	var viewer = new MJPEGCANVAS.MultiStreamViewer({
 		divID : 'mjpeg',
-		host : 'localhost',
+		host : location.host,
 		width : 640,
 		height : 480,
 		topics : NAMES_OF_VIDEO_FEED_TOPIC,
