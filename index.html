@@ -32,6 +32,10 @@
 	float: right;
 	background-color:lightblue;
 }
+input[type="number"]
+{
+	width: 70px;
+}
 #url-vlc{
 	width: 90%;
 }
@@ -41,10 +45,16 @@
 
   var NAMES_OF_VIDEO_FEED_TOPIC = ['/mamba/ardrone/image_raw', '/king/ardrone/image_raw'];
   var LABELS_OF_VIDEO_FEED_TOPIC = ['robot front camera', 'robot back camera...'];
-  var NAME_OF_POSITION_TOPIC = '/cube_position_js';
+  var NAMESPACE = '/192_168_10_243';
+  var COMMAND_TOPIC = NAMESPACE + '/commands';
+  var COMMAND_TOPIC_TYPE ='controls/Commands';
+  var STATE_POS_TOPIC = NAMESPACE + '/state_estimator/pose';
+  var STATE_VEL_TOPIC = NAMESPACE + '/state_estimator/vel';
+  var STATE_POS_TOPIC_TYPE = "geometry_msgs/PoseStamped";
+  var STATE_VEL_TOPIC_TYPE = "geometry_msgs/TwistStamped";
   var cmdVel;
   var ros;
-  var listener;
+  var listener, listenerPos, listenerVel;
   var target_topic = "/";
   var autoupdate_timer;
   /**
@@ -71,11 +81,6 @@
 		console.log('Connection to websocket server closed.');
 	});
 
-	cmdVel = new ROSLIB.Topic({
-		ros : ros,
-		name : NAME_OF_POSITION_TOPIC,
-		messageType : 'geometry_msgs/Point'
-	});
 
 	
 	// Create the image multistream viewer.
@@ -92,24 +97,94 @@
 				     location.host + ':8080/stream?topic=' + 
 				     NAMES_OF_VIDEO_FEED_TOPIC[0];
     $("#url-vlc").val(url_vlc_fullscreen);
+    
     updateTopicsList();
    
     // Subscribe to the last message of the targeted topic
     // And print it in the box
    setInterval(autoUpdate, 500);
+
+   // Publisher of commands
+   cmdVel = new ROSLIB.Topic({
+		ros : ros,
+		name : COMMAND_TOPIC,
+		messageType : COMMAND_TOPIC_TYPE
+	});
+
+   	// Subscribe to the cube state
+	listenerPos = new ROSLIB.Topic({
+	ros : ros,
+	name : STATE_POS_TOPIC,
+	messageType : STATE_POS_TOPIC_TYPE
+	});
+
+	listenerVel = new ROSLIB.Topic({
+	ros : ros,
+	name : STATE_VEL_TOPIC,
+	messageType : STATE_VEL_TOPIC_TYPE
+	});
+
+	listenerPos.subscribe(
+		function(msgPosition){=
+
+			var pose = "Position[m]      " + 
+						  " X:" + msgPosition.pose.position.x.toFixed(2) + 
+						"   Y:" + msgPosition.pose.position.y.toFixed(2) +
+						"   Z:" + msgPosition.pose.position.z.toFixed(2);
+
+			var roll, pitch, yaw;
+			roll =   msgPosition.pose.orientation.x * 180.0 / Math.PI;
+			pitch =  msgPosition.pose.orientation.y * 180.0 / Math.PI;
+			yaw =    msgPosition.pose.orientation.z * 180.0 / Math.PI;
+			
+			var abridge = pose + "<br/>Orientation[deg]:" +
+						  " roll:" + roll.toFixed(5) +
+						  " pitch:" + pitch.toFixed(5) +
+						  " Yawl:" + yaw.toFixed(5);
+
+			$('#current-position').html(abridge);
+		}
+	);
+
+	listenerVel.subscribe(
+		function(msgPosition){
+
+			var abridge = "Velocity[m/s]    " + 
+						  " X:" + msgPosition.twist.linear.x.toFixed(4) +
+						  " Y:" + msgPosition.twist.linear.y.toFixed(4) +
+						  " Z:" + msgPosition.twist.linear.z.toFixed(4);
+			$('#current-velocity').html(abridge);
+		}
+	);
 }
 
 /**
  Does actions when the submit button is pressed
 **/
 function sendPosition() {
-       //console.log($( "#X" ).val());
-	 var point = new ROSLIB.Message({
-		x : parseFloat($( "#X" ).val()),
-		y : parseFloat($( "#Y" ).val()),
-		z : parseFloat($( "#Z" ).val())
-	});
-	cmdVel.publish(point);
+	var msg = {
+				commandOnOff: true,
+				onOff:  $("#onOff")[0].checked,
+				ctrlNb:  1,
+				path:  false,
+				pathNb:  1,
+				maxThrust:  parseInt($( "#maxThrust" ).val()),
+				noInt:  $("#noInt")[0].checked,
+				deltaPose:{
+					position : {
+						x : parseFloat($( "#X" ).val()),
+						y : parseFloat($( "#Y" ).val()),
+						z : parseFloat($( "#Z" ).val())
+					},
+					orientation: {
+						x:0,y:0,z:0,w:0
+					}
+				}
+			};
+	console.log(msg);
+	console.log($( "#onOff" ).val());
+	var pose = new ROSLIB.Message(msg);
+	cmdVel.publish(pose);
 }
 
 function setTargetTopic(){
@@ -132,19 +207,19 @@ function updateTargetTopic(){
 			//console.log(type);
 			console.log("Update topic message");
 			listener = new ROSLIB.Topic({
-			    ros : ros,
-			    name : target_topic,
-			   messageType : type
-			  });
+				ros : ros,
+				name : target_topic,
+				messageType : type
+			});
 
-			  listener.subscribe(function(message) {
+			listener.subscribe(function(message) {
 				//We check that it's not an image before converting it to text
 				if(type.match("/Image$")){
-				$('#topic-out').html("Use the image stream on the left for displaying image");
+					$('#topic-out').html("Use the image stream on the left for displaying image");
 				}
 				else{
-				var indentedMsgOutput = JSON.stringify(message, null, 4);
-				$('#topic-out').html(indentedMsgOutput);
+					var indentedMsgOutput = JSON.stringify(message, null, 4);
+					$('#topic-out').html(indentedMsgOutput);
 				}
 				listener.unsubscribe();
 			  });
@@ -157,7 +232,7 @@ function updateTopicsList(){
 		function(results) {
 			console.log("Refresing topics")
 			$("#topics").empty();
-				$("#topics").append("<option >/</option>");
+			$("#topics").append("<option >/</option>");
 			for(var i in results){
 				$("#topics").append("<option >" + results[i] + "</option>");
 			}
@@ -171,21 +246,32 @@ function updateTopicsList(){
 <body onload="init()">
   <h2>Tryphon Teleoperation Interface</h2>
 <div id="leftDiv"> 
-<form id="position">
-	<div>
-		<input type="number" id="X" name="X" min="0" step="0.1" value="0.4" />m
-		<input type="number" id="Y" name="Y" min="0" step="0.1" value="0.4" />m
-		<input type="number" id="Z" name="Z" min="0" step="0.1" value="0.4" />m
-		<input type='button' value='Send position' onClick='sendPosition()' >
-	</div>
-</form>
-  <div id="mjpeg"></div>
-  URL for VLC in (Media > Open Network Stream...): <input type="text" id="url-vlc" name="url-vlc" />
+	<pre id="current-position"> </pre>
+	<pre id="current-velocity"> </pre>
+	<form id="position">
+		<div>
+			<label for="onOff">Enable:</label>        <input type="checkbox" id="onOff" checked="checked" value="1"/>
+			<label for="maxThrust">Max thrust:</label><input type="number" id="maxThrust" name="maxThrust" step="1" value="23" min="18" max="28" />
+			<label for="gain">Gain CP:</label>        <input type="number" id="gain" name="gain" step="0.05" value="1" min="0.05" max="1"/>
+			<label for="noInt">Integrator:</label>    <input type="checkbox" id="noInt" value="1" />
+			</br>
+			Position[m]: 
+			<input type="number" id="X" name="X" step="0.1" value="0"  min="-7" max="7"/>
+			<input type="number" id="Y" name="Y" step="0.1" value="0"  min="-7" max="7"/>
+			<input type="number" id="Z" name="Z" step="0.1" value="2.5"  min="2"  max="5"/>
+			<input type="button" value="Send command" onClick="sendPosition()" />
+		</div>
+	</form>
+	  <div id="mjpeg"></div>
+	  URL for VLC in (Media > Open Network Stream...): <input type="text" id="url-vlc" name="url-vlc" />
 </div>
 
 <div id="rightDiv"> 
-	<input type='button' value='Refresh topics' onClick='updateTopicsList()' /><label>Auto update:</label><input type="checkbox" id="autoupdate" value="0" />
-	<select id="topics" onchange="setTargetTopic()"><option>/</option></select> 
+	<input type='button' value='Refresh topics' onClick='updateTopicsList()' />
+	<label for="autoupdate">Auto update:</label><input type="checkbox" id="autoupdate" value="0" />
+	<select id="topics" onchange="setTargetTopic()">
+		<option>/</option>
+	</select> 
 	<pre id="topic-out"></pre>
 </div>
 

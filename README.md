@@ -23,16 +23,14 @@ On two differents terminal inputs the following command line:
 $ roslaunch rosbridge_server rosbridge_websocket.launch
 $ rosrun mjpeg_server mjpeg_server
 ```
-Then you need to open the index.html file in a browser (http://localhost/CubeTeleopWebsite/)
+Then you need to open the index.html file in a browser ([http://localhost/CubeTeleopWebsite/](http://localhost/CubeTeleopWebsite/))
 
-To set the video stream topic and it label. Open index.html and change the following line:
+To set the video stream topic and is label. Open index.html and change the following line:
 ```javascript
   var NAMES_OF_VIDEO_FEED_TOPIC = ['/mamba/ardrone/image_raw', '/king/ardrone/image_raw'];
   var LABELS_OF_VIDEO_FEED_TOPIC = ['robot front camera', 'camera whatever'];
-
 ```
-To set the position topic output, open index.html and change the following line:
+To set the ROS namespace, open index.html and change the following line:
 ```javascript
-  var NAME_OF_POSITION_TOPIC = '/cube_position_js';
-
+  var NAMESPACE = '/192_168_10_243';
 ```
