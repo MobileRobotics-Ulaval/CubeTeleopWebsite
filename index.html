@@ -1,88 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
+	<meta charset="utf-8" />
 
-<!-- image streams -->
-<script type="text/javascript" src="http://cdn.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
-<script type="text/javascript" src="http://cdn.robotwebtools.org/mjpegcanvasjs/current/mjpegcanvas.min.js"></script>
+	<!-- image streams -->
+	<script type="text/javascript" src="http://cdn.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+	<script type="text/javascript" src="http://cdn.robotwebtools.org/mjpegcanvasjs/current/mjpegcanvas.min.js"></script>
 
-<!-- Teleop -->
-<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" />
+	<!-- Teleop -->
+	<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" />
 
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
 
-<script type="text/javascript" src="http://cdn.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
-<script type="text/javascript" src="http://cdn.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
-<script type="text/javascript" src="http://cdn.robotwebtools.org/keyboardteleopjs/current/keyboardteleop.min.js"></script>
+	<script type="text/javascript" src="http://cdn.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+	<script type="text/javascript" src="http://cdn.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+	<script type="text/javascript" src="http://cdn.robotwebtools.org/keyboardteleopjs/current/keyboardteleop.min.js"></script>
 
-<style type="text/css">
+	<style type="text/css">
 
+	
+	#connecting{
+		background-color: yellow;
+		display: block;
+	}
+	#error{
+		background-color: tomato;
+		display: none;
+	} 
+	#connected{
+		display: none;
+	} 
+	
+	#leftDiv{
+		width: 650;
+		float: left;
+		background-color:lightgreen;
+	}
 
-#leftDiv{
-	width: 650;
-	float: left;
-	background-color:lightgreen;
-} 
+	#rightDiv{
+		overflow-x: scroll;
+		width: 50%;
+		float: right;
+		background-color:lightblue;
+	}
+	input[type="number"]
+	{
+		width: 70px;
+	}
+	#url-vlc{
+		width: 90%;
+	}
+	</style>
 
-#rightDiv{
-	overflow-x: scroll;
-	width: 50%;
-	float: right;
-	background-color:lightblue;
-}
-input[type="number"]
-{
-	width: 70px;
-}
-#url-vlc{
-	width: 90%;
-}
-</style>
+	<script type="text/javascript" type="text/javascript">
 
-<script type="text/javascript" type="text/javascript">
-
-  var NAMES_OF_VIDEO_FEED_TOPIC = ['/mamba/ardrone/image_raw', '/king/ardrone/image_raw'];
-  var LABELS_OF_VIDEO_FEED_TOPIC = ['robot front camera', 'robot back camera...'];
-  var NAMESPACE = '/192_168_10_243';
-  var COMMAND_TOPIC = NAMESPACE + '/commands';
-  var COMMAND_TOPIC_TYPE ='controls/Commands';
-  var STATE_POS_TOPIC = NAMESPACE + '/state_estimator/pose';
-  var STATE_VEL_TOPIC = NAMESPACE + '/state_estimator/vel';
-  var STATE_POS_TOPIC_TYPE = "geometry_msgs/PoseStamped";
-  var STATE_VEL_TOPIC_TYPE = "geometry_msgs/TwistStamped";
-  var cmdVel;
-  var ros;
-  var listener, listenerPos, listenerVel;
-  var target_topic = "/";
-  var autoupdate_timer;
+	var NAMES_OF_VIDEO_FEED_TOPIC = ['/mamba/ardrone/image_raw', '/king/ardrone/image_raw'];
+	var LABELS_OF_VIDEO_FEED_TOPIC = ['robot front camera', 'robot back camera...'];
+	var NAMESPACE = '/192_168_10_243';
+	var COMMAND_TOPIC = NAMESPACE + '/commands';
+	var COMMAND_TOPIC_TYPE ='controls/Commands';
+	var STATE_POS_TOPIC = NAMESPACE + '/state_estimator/pose';
+	var STATE_VEL_TOPIC = NAMESPACE + '/state_estimator/vel';
+	var STATE_POS_TOPIC_TYPE = "geometry_msgs/PoseStamped";
+	var STATE_VEL_TOPIC_TYPE = "geometry_msgs/TwistStamped";
+	var cmdVel;
+	var ros;
+	var listener, listenerPos, listenerVel;
+	var target_topic = "/";
+	var autoupdate_timer;
   /**
    * Setup all visualization elements when the page is loaded. 
    */
-  function init() {
+   function init() {
 
-	ros = new ROSLIB.Ros({
+   	ros = new ROSLIB.Ros({
 		//url : 'ws://rail-sim2.cs.wpi.edu:9090'
 		url : 'ws://'  + 
-			  location.host + 
-			  ':9090'
+		location.host + 
+		':9090'
 	});
 
-	ros.on('connection', function() {
-		console.log('Connected to websocket server.');
-	});
-
-	ros.on('error', function(error) {
-		console.log('Error connecting to websocket server: ', error);
-	});
-
-	ros.on('close', function() {
-		console.log('Connection to websocket server closed.');
-	});
+   	document.getElementById('connecting').style.display = 'block';
+   	document.getElementById('connected').style.display = 'none';
+   	document.getElementById('error').style.display = 'none';
 
 
-	
+   	ros.on('connection', function() {
+   		console.log('Connected to websocket server.');
+	   	document.getElementById('connecting').style.display = 'none';
+	   	document.getElementById('connected').style.display = 'block';
+	   	document.getElementById('error').style.display = 'none';
+   	});
+
+   	ros.on('error', function(error) {
+   		console.log('Error connecting to websocket server: ', error);
+	   	document.getElementById('connecting').style.display = 'none';
+	   	document.getElementById('connected').style.display = 'none';
+	 	document.getElementById('error').style.display = 'block';
+
+		//var indentedMsgOutput = JSON.stringify(error, null, 4);
+		//$('#errorMsg').html(indentedMsgOutput);
+   	});
+
+   	ros.on('close', function() {
+   		console.log('Connection to websocket server closed.');
+   	});
+
+
+
 	// Create the image multistream viewer.
 	var viewer = new MJPEGCANVAS.MultiStreamViewer({
 		divID : 'mjpeg',
@@ -92,102 +118,102 @@ input[type="number"]
 		topics : NAMES_OF_VIDEO_FEED_TOPIC,
 		labels : LABELS_OF_VIDEO_FEED_TOPIC
 	});
-    
-    var url_vlc_fullscreen = location.protocol + "//"  + 
-				     location.host + ':8080/stream?topic=' + 
-				     NAMES_OF_VIDEO_FEED_TOPIC[0];
-    $("#url-vlc").val(url_vlc_fullscreen);
-    
-    updateTopicsList();
-   
+
+	var url_vlc_fullscreen = location.protocol + "//"  + 
+	location.host + ':8080/stream?topic=' + 
+	NAMES_OF_VIDEO_FEED_TOPIC[0];
+	$("#url-vlc").val(url_vlc_fullscreen);
+
+	updateTopicsList();
+
     // Subscribe to the last message of the targeted topic
     // And print it in the box
-   setInterval(autoUpdate, 500);
+    setInterval(autoUpdate, 500);
 
    // Publisher of commands
    cmdVel = new ROSLIB.Topic({
-		ros : ros,
-		name : COMMAND_TOPIC,
-		messageType : COMMAND_TOPIC_TYPE
-	});
+   	ros : ros,
+   	name : COMMAND_TOPIC,
+   	messageType : COMMAND_TOPIC_TYPE
+   });
 
    	// Subscribe to the cube state
-	listenerPos = new ROSLIB.Topic({
-	ros : ros,
-	name : STATE_POS_TOPIC,
-	messageType : STATE_POS_TOPIC_TYPE
-	});
+   	listenerPos = new ROSLIB.Topic({
+   		ros : ros,
+   		name : STATE_POS_TOPIC,
+   		messageType : STATE_POS_TOPIC_TYPE
+   	});
 
-	listenerVel = new ROSLIB.Topic({
-	ros : ros,
-	name : STATE_VEL_TOPIC,
-	messageType : STATE_VEL_TOPIC_TYPE
-	});
+   	listenerVel = new ROSLIB.Topic({
+   		ros : ros,
+   		name : STATE_VEL_TOPIC,
+   		messageType : STATE_VEL_TOPIC_TYPE
+   	});
 
-	listenerPos.subscribe(
-		function(msgPosition){
-			var pose = "Position[m]      " + 
-						  " X:" + msgPosition.pose.position.x.toFixed(2) + 
-						"   Y:" + msgPosition.pose.position.y.toFixed(2) +
-						"   Z:" + msgPosition.pose.position.z.toFixed(2);
+   	listenerPos.subscribe(
+   		function(msgPosition){
+   			var pose = "Position[m]      " + 
+   			" X:" + msgPosition.pose.position.x.toFixed(2) + 
+   			"   Y:" + msgPosition.pose.position.y.toFixed(2) +
+   			"   Z:" + msgPosition.pose.position.z.toFixed(2);
 
-			var roll, pitch, yaw;
-			roll =   msgPosition.pose.orientation.x * 180.0 / Math.PI;
-			pitch =  msgPosition.pose.orientation.y * 180.0 / Math.PI;
-			yaw =    msgPosition.pose.orientation.z * 180.0 / Math.PI;
-			
-			var abridge = pose + "<br/>Orientation[deg]:" +
-						  " roll:" + roll.toFixed(5) +
-						  " pitch:" + pitch.toFixed(5) +
-						  " Yawl:" + yaw.toFixed(5);
+   			var roll, pitch, yaw;
+   			roll =   msgPosition.pose.orientation.x * 180.0 / Math.PI;
+   			pitch =  msgPosition.pose.orientation.y * 180.0 / Math.PI;
+   			yaw =    msgPosition.pose.orientation.z * 180.0 / Math.PI;
 
-			$('#current-position').html(abridge);
-		}
-	);
+   			var abridge = pose + "<br/>Orientation[deg]:" +
+   			" roll:" + roll.toFixed(5) +
+   			" pitch:" + pitch.toFixed(5) +
+   			" Yawl:" + yaw.toFixed(5);
 
-	listenerVel.subscribe(
-		function(msgPosition){
+   			$('#current-position').html(abridge);
+   		}
+   		);
 
-			var abridge = "Velocity[m/s]    " + 
-						  " X:" + msgPosition.twist.linear.x.toFixed(4) +
-						  " Y:" + msgPosition.twist.linear.y.toFixed(4) +
-						  " Z:" + msgPosition.twist.linear.z.toFixed(4);
-			$('#current-velocity').html(abridge);
-		}
-	);
-}
+   	listenerVel.subscribe(
+   		function(msgPosition){
+
+   			var abridge = "Velocity[m/s]    " + 
+   			" X:" + msgPosition.twist.linear.x.toFixed(4) +
+   			" Y:" + msgPosition.twist.linear.y.toFixed(4) +
+   			" Z:" + msgPosition.twist.linear.z.toFixed(4);
+   			$('#current-velocity').html(abridge);
+   		}
+   		);
+   }
 
 /**
  Does actions when the submit button is pressed
-**/
-function sendPosition() {
-	var msg = {
-				commandOnOff: true,
-				onOff:  $("#onOff")[0].checked,
-				ctrlNb:  parseInt($( "#ctrlNb" ).val()),
-				path:  $("#noPath")[0].checked,
-				pathNb:  parseInt($( "#pathNb" ).val()),
-				maxThrust:  parseInt($( "#maxThrust" ).val()),
-				GainCP:  parseFloat($( "#GainCP" ).val()),
-				noInt:  $("#noInt")[0].checked,
-				deltaPose:{
-					position : {
-						x : parseFloat($( "#X" ).val()),
-						y : parseFloat($( "#Y" ).val()),
-						z : parseFloat($( "#Z" ).val())
-					},
-					orientation: {
-						x:0,y:0,z:0,w:0
-					}
-				}
-			};
-	console.log(msg);
-	console.log($( "#onOff" ).val());
-	var pose = new ROSLIB.Message(msg);
-	cmdVel.publish(pose);
-}
+ **/
+ function sendPosition() {
+ 	var msg = {
+ 		commandOnOff: true,
+ 		onOff:  $("#onOff")[0].checked,
+ 		ctrlNb:  parseInt($( "#ctrlNb" ).val()),
+ 		path:  $("#noPath")[0].checked,
+ 		pathNb:  parseInt($( "#pathNb" ).val()),
+ 		maxThrust:  parseInt($( "#maxThrust" ).val()),
+ 		GainCP:  parseFloat($( "#GainCP" ).val()),
+ 		noInt:  $("#noInt")[0].checked,
+ 		deltaPose:{
+ 			position : {
+ 				x : parseFloat($( "#X" ).val()),
+ 				y : parseFloat($( "#Y" ).val()),
+ 				z : parseFloat($( "#Z" ).val())
+ 			},
+ 			orientation: {
+ 				x:0,y:0,z:0,w:0
+ 			}
+ 		}
+ 	};
+ 	console.log(msg);
+ 	console.log($( "#onOff" ).val());
+ 	var pose = new ROSLIB.Message(msg);
+ 	cmdVel.publish(pose);
+ }
 
-function setTargetTopic(){
+ function setTargetTopic(){
 	// We fetch the message type with is name
 	target_topic = $("#topics").val();
 	console.log('Name: ' + target_topic);
@@ -222,8 +248,8 @@ function updateTargetTopic(){
 					$('#topic-out').html(indentedMsgOutput);
 				}
 				listener.unsubscribe();
-			  });
-	});
+			});
+		});
 }
 
 
@@ -236,7 +262,7 @@ function updateTopicsList(){
 			for(var i in results){
 				$("#topics").append("<option >" + results[i] + "</option>");
 			}
-	});
+		});
 	
 }
 
@@ -244,39 +270,55 @@ function updateTopicsList(){
 </head>
 
 <body onload="init()">
-  <h2>Tryphon Teleoperation Interface</h2>
-<div id="leftDiv"> 
-	<pre id="current-position"> </pre>
-	<pre id="current-velocity"> </pre>
-	<form id="position">
-		<div>
-			<label for="onOff">Enable:</label>        <input type="checkbox" id="onOff" checked="checked" value="1"/>
-			<label for="maxThrust">Max thrust:</label><input type="number" id="maxThrust" name="maxThrust" step="1" value="23" min="18" max="28" />
-			<label for="GainCP">Gain CP:</label>        <input type="number" id="GainCP" name="GainCP" step="0.05" value="1" min="0.05" max="1"/>
-			<label for="ctrlNb">Ctrl Nbr:</label>  <input type="number" id="ctrlNb" name="ctrlNb" step="1" value="1" min="0" max="6"/>
-			<label for="pathNb">Path Nbr:</label>  <input type="number" id="pathNb" name="pathNb" step="1" value="1" min="0" max="15"/>
-			<label for="noPath">Path:</label>    <input type="checkbox" id="noPath" value="1" />
-			<label for="noInt">Integrator:</label>    <input type="checkbox" id="noInt" value="1" />
-			</br>
-			Position[m]: 
-			<input type="number" id="X" name="X" step="0.1" value="0"  min="-7" max="7"/>
-			<input type="number" id="Y" name="Y" step="0.1" value="0"  min="-7" max="7"/>
-			<input type="number" id="Z" name="Z" step="0.1" value="2.5"  min="2"  max="5"/>
-			<input type="button" value="Send command" onClick="sendPosition()" />
-		</div>
-	</form>
-	  <div id="mjpeg"></div>
-	  URL for VLC in (Media > Open Network Stream...): <input type="text" id="url-vlc" name="url-vlc" />
-</div>
+	<h2>Tryphon Teleoperation Interface</h2>
 
-<div id="rightDiv"> 
-	<input type='button' value='Refresh topics' onClick='updateTopicsList()' />
-	<label for="autoupdate">Auto update:</label><input type="checkbox" id="autoupdate" value="0" />
-	<select id="topics" onchange="setTargetTopic()">
-		<option>/</option>
-	</select> 
-	<pre id="topic-out"></pre>
-</div>
+	<div id="connecting" style="background-color: yellow">
+		<h4>Connecting to Rosbridge...</h4>
+	</div>
+
+	<div id="error" style="background-color: tomato">
+		<h4>Error in the backend!</h4>
+		<pre id="errorMsg"></pre>
+		<p>Are you sure that Rosbridge is launched? If it was not already done enter the following commands:</p>
+		<pre>
+		$ roslaunch rosbridge_server rosbridge_websocket.launch
+		$ rosrun mjpeg_server mjpeg_server
+		</pre>
+    </div>
+	<div id="connected">
+		<div id="leftDiv"> 
+			<pre id="current-position"> </pre>
+			<pre id="current-velocity"> </pre>
+			<form id="position">
+				<div>
+					<label for="onOff">Enable:</label>        <input type="checkbox" id="onOff" checked="checked" value="1"/>
+					<label for="maxThrust">Max thrust:</label><input type="number" id="maxThrust" name="maxThrust" step="1" value="23" min="18" max="28" />
+					<label for="GainCP">Gain CP:</label>        <input type="number" id="GainCP" name="GainCP" step="0.05" value="1" min="0.05" max="1"/>
+					<label for="ctrlNb">Ctrl Nbr:</label>  <input type="number" id="ctrlNb" name="ctrlNb" step="1" value="1" min="0" max="6"/>
+					<label for="pathNb">Path Nbr:</label>  <input type="number" id="pathNb" name="pathNb" step="1" value="1" min="0" max="15"/>
+					<label for="noPath">Path:</label>    <input type="checkbox" id="noPath" value="1" />
+					<label for="noInt">Integrator:</label>    <input type="checkbox" id="noInt" value="1" />
+				</br>
+				Position[m]: 
+				<input type="number" id="X" name="X" step="0.1" value="0"  min="-7" max="7"/>
+				<input type="number" id="Y" name="Y" step="0.1" value="0"  min="-7" max="7"/>
+				<input type="number" id="Z" name="Z" step="0.1" value="2.5"  min="2"  max="5"/>
+				<input type="button" value="Send command" onClick="sendPosition()" />
+			</div>
+		</form>
+		<div id="mjpeg"></div>
+			URL for VLC in (Media > Open Network Stream...): <input type="text" id="url-vlc" name="url-vlc" />
+		</div>
+
+		<div id="rightDiv"> 
+			<input type='button' value='Refresh topics' onClick='updateTopicsList()' />
+			<label for="autoupdate">Auto update:</label><input type="checkbox" id="autoupdate" value="0" checked="checked" />
+			<select id="topics" onchange="setTargetTopic()">
+				<option>/</option>
+			</select> 
+			<pre id="topic-out"></pre>
+		</div>
+	</div>
 
 </body>
 </html>
