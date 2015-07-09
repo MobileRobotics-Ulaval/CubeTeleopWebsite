@@ -64,6 +64,7 @@
 	var STATE_VEL_TOPIC = NAMESPACE + '/state_estimator/vel';
 	var STATE_POS_TOPIC_TYPE = "geometry_msgs/PoseStamped";
 	var STATE_VEL_TOPIC_TYPE = "geometry_msgs/TwistStamped";
+	var TIME_INTERVAL_BETWEEN_FETCH = 250; // In ms
 	var cmdVel;
 	var ros;
 	var listener, listenerPos, listenerVel;
@@ -125,10 +126,6 @@
 	$("#url-vlc").val(url_vlc_fullscreen);
 
 	updateTopicsList();
-
-    // Subscribe to the last message of the targeted topic
-    // And print it in the box
-    setInterval(autoUpdate, 500);
 
    // Publisher of commands
    cmdVel = new ROSLIB.Topic({
@@ -217,17 +214,17 @@
 	// We fetch the message type with is name
 	target_topic = $("#topics").val();
 	console.log('Name: ' + target_topic);
-	updateTargetTopic();
+
+	// We unsubscribe from the old topic, if it has been define
+	if (typeof listener !== 'undefined')
+		listener.unsubscribe();
+
+	// Subscribe to new topic
+	subscribeTargetTopic();
 }
 
-function autoUpdate(){
-	// If the target topic is defined and auto update is ON
-	if(target_topic != "/" && $("#autoupdate")[0].checked){
-		updateTargetTopic();
-	}
-}
 
-function updateTargetTopic(){
+function subscribeTargetTopic(){
 	ros.getTopicType(target_topic, 
 		function(type){
 			//console.log(type);
@@ -235,7 +232,9 @@ function updateTargetTopic(){
 			listener = new ROSLIB.Topic({
 				ros : ros,
 				name : target_topic,
-				messageType : type
+				messageType : type,
+				throttle_rate: TIME_INTERVAL_BETWEEN_FETCH, // Time interval between fecth in ms
+				queue_size: 1
 			});
 
 			listener.subscribe(function(message) {
@@ -247,7 +246,6 @@ function updateTargetTopic(){
 					var indentedMsgOutput = JSON.stringify(message, null, 4);
 					$('#topic-out').html(indentedMsgOutput);
 				}
-				listener.unsubscribe();
 			});
 		});
 }
@@ -311,8 +309,7 @@ function updateTopicsList(){
 		</div>
 
 		<div id="rightDiv"> 
-			<input type='button' value='Refresh topics' onClick='updateTopicsList()' />
-			<label for="autoupdate">Auto update:</label><input type="checkbox" id="autoupdate" value="0" checked="checked" />
+			<input type='button' value='Refresh topics list' onClick='updateTopicsList()' />
 			<select id="topics" onchange="setTargetTopic()">
 				<option>/</option>
 			</select> 
