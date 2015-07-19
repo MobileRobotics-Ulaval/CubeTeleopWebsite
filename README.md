@@ -13,7 +13,7 @@ $ git clone  https://github.com/MobileRobotics-Ulaval/CubeTeleopWebsite
 
 ##Installation of ROSlibjs##
 ```shell
-$ sudo apt-get install apache2 ros-<insert ros version(Ex:hydro)>-rosbridge-suite ros-<same here>-mjpeg-server
+$ sudo apt-get install apache2 ros-<insert ros version(Ex:hydro)>-rosbridge-suite ros-<same here>-web-video-server
 
 ```
 
@@ -21,7 +21,7 @@ $ sudo apt-get install apache2 ros-<insert ros version(Ex:hydro)>-rosbridge-suit
 On two differents terminal inputs the following command line:
 ```shell
 $ roslaunch rosbridge_server rosbridge_websocket.launch
-$ rosrun mjpeg_server mjpeg_server
+$ rosrun web_video_server web_video_server _image_transport:="compressed"
 ```
 Then you need to open the index.html file in a browser ([http://localhost/CubeTeleopWebsite/](http://localhost/CubeTeleopWebsite/))
 
